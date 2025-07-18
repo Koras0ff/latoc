@@ -5,7 +5,7 @@ import json
 import re
 import math
 from pathlib import Path
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 
 
 
@@ -23,7 +23,7 @@ Welcome to **interface of the LATUC**!
 This tool lets you search classical Ottoman poetry by text and POS‐tag,  
 and visualize corpus‐wide statistics in the Analyzer.
 Designed by Enes Yılandiloğlu.
-Contact: enes.yilandiloglu@helsinki.fi
+Contact: enes.yilandiloglu (et) helsinki.fi
 """)
 
 main_tabs = st.tabs(["Explorer", "Analyzer"])
