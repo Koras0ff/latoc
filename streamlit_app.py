@@ -99,6 +99,7 @@ with st.sidebar:
         ("work_name", "Work Name"),
         ("pen_name",  "Pen Name"),
         ("real_name", "Real Name"),
+        ("viaf", "viaf"),
         ("century",   "Century"),
         ("gender",    "Gender"),
         ("rank",      "Rank")
