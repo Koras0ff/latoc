@@ -19,11 +19,12 @@ st.title("LATUC")
 
 # ─── Top‐level description ───
 st.markdown("""
-Welcome to **interface of the LATUC**!  
+Welcome to **Interface of the LATUC**!  
 This tool lets you search classical Ottoman poetry by text and POS‐tag,  
 and visualize corpus‐wide statistics in the Analyzer.
-Designed by Enes Yılandiloğlu.
-Contact: enes.yilandiloglu (et) helsinki.fi
+
+Designed by Enes Yılandiloğlu.  
+Contact: enes.yilandiloglu@helsinki.fi
 """)
 
 main_tabs = st.tabs(["Explorer", "Analyzer"])
