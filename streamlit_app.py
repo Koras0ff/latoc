@@ -780,6 +780,6 @@ with analyzer_tab:
             pr_raw, pp_raw, sr_raw, sp_raw = safe_corr(idx, raw_series)
             pr_norm, pp_norm, sr_norm, sp_norm = safe_corr(idx, norm_series)
 
-            st.markdown("### Korelasyon Sonuçları")
+            st.markdown("### Correlation Results")
             st.write(f"**Raw** — Pearson r={pr_raw:.3f} (p={pp_raw:.3f}), Spearman ρ={sr_raw:.3f} (p={sp_raw:.3f})")
             st.write(f"**Norm** — Pearson r={pr_norm:.3f} (p={pp_norm:.3f}), Spearman ρ={sr_norm:.3f} (p={sp_norm:.3f})")
