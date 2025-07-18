@@ -54,7 +54,7 @@ def load_data():
     for fn, rec in latuc.items():
         matches = metadata.loc[metadata["ID"] == fn]
         if matches.empty:
-            st.warning(f"Metadata not found for file '{fn}', skipping.")
+            #st.warning(f"Metadata not found for file '{fn}', skipping.")
             continue
         meta = matches.iloc[0].to_dict()
 
