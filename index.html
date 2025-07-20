@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LATUC Interface</title>
+  <title>LATOC Interface</title>
   <style>
     body { font-family: 'Times New Roman', serif; margin: 0; padding: 0; background: #fefefe; color: #333; }
     header { background: #fafafa; padding: 1rem 2rem; text-align: center; border-bottom: 1px solid #ddd; }
@@ -112,8 +112,8 @@
 </head>
 <body>
   <header>
-    <h1>LATUC Interface</h1>
-    <p>This tool is designed to explore and analyze Latin Transcribed Ottoman Turkish Corpus (LATUC).<br>
+    <h1>LATOC Interface</h1>
+    <p>This tool is designed to explore and analyze Latin Transcribed Ottoman Turkish Corpus (LATOC).<br>
         You can access the data via https://zenodo.org/uploads/16065144.<br>
        Designed by Enes Yılandiloğlu<br>
     Contact: enes.yilandiloglu@helsinki.fi</p>
@@ -223,7 +223,7 @@
 
     <!-- Analyzer Sekmesi -->
     <section id="analyzer" class="tab-content">
-        <h2>LATUC Analyzer</h2>
+        <h2>LATOC Analyzer</h2>
         <p style="margin-bottom:1rem; color:#555;">
           The Analyzer gives you corpus‑wide statistics and trends at a glance.  
           • View total token counts, unique type counts, type‑token ratios, and hapax legomena across the entire dataset.  
@@ -630,9 +630,9 @@ genCenturies.forEach(c => {
 
 
     async function loadData() {
-      const resJson = await fetch('LATUC.json');
+      const resJson = await fetch('LATOC.json');
       latuc = await resJson.json();
-      const resCsv = await fetch('LATUC_metadata.csv');
+      const resCsv = await fetch('LATOC_metadata.csv');
       const text = await resCsv.text();
       metadata = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
       initializeFilters();
