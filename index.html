@@ -362,7 +362,7 @@ function renderAnalyzer() {
   const meterCounts = {};
   const genderMap = {};         // { '15': { male: 0, female: 0 }, … }
   metadata.forEach(d => {
-    const poems = latuc[d.oldID]?.Poems || {};
+    const poems = latuc[d.ID]?.Poems || {};
     Object.values(poems).forEach(p => {
       const lines = p.Poem.split('\n');
       allLines.push(...lines);
@@ -408,8 +408,8 @@ function renderAnalyzer() {
   metadata.forEach(d => {
     const c = d.century;
     if (!centuryMap[c]) centuryMap[c] = { works:new Set(), tokens:[], types:new Set() };
-    centuryMap[c].works.add(d.oldID);
-    const poems = latuc[d.oldID].Poems;
+    centuryMap[c].works.add(d.ID);
+    const poems = latuc[d.ID].Poems;
     Object.values(poems).forEach(p => {
       p.Poem.split('\n').forEach(ln=>{
         ln.split(/\s+/).filter(Boolean).forEach(tok=>{
@@ -620,9 +620,7 @@ genCenturies.forEach(c => {
       metadata = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
       initializeFilters();
       updatePoemList();
-      initializeFilters();
-        updatePoemList();
-        renderAnalyzer();
+      renderAnalyzer();
     }
 
 
@@ -708,7 +706,7 @@ function updatePoemList() {
   // 2) Flatten metadata → poemEntries
   const poemEntries = [];
   filteredMeta.forEach(datum => {
-    const poemsObj = latuc[datum.oldID]?.Poems || {};
+    const poemsObj = latuc[datum.ID]?.Poems || {};
     Object.values(poemsObj).forEach(poem => {
       poemEntries.push({ meta: datum, poem });
     });
@@ -924,7 +922,7 @@ let tokenRecords = [];
 function buildTokenIndex() {
   tokenRecords = [];
   metadata.forEach(d => {
-    const poems = latuc[d.oldID]?.Poems || {};
+    const poems = latuc[d.ID]?.Poems || {};
     Object.values(poems).forEach(p => {
       const lines = p.Poem.split('\n');
       lines.forEach((ln, lineIdx) => {
