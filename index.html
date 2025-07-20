@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LATUC Interface</title>
+  <style>
+    body { font-family: 'Times New Roman', serif; margin: 0; padding: 0; background: #fefefe; color: #333; }
+    header { background: #fafafa; padding: 1rem 2rem; text-align: center; border-bottom: 1px solid #ddd; }
+    header h1 { margin: 0; font-size: 2rem; }
+    header p { margin: 0.5rem 0 0; font-size: 0.9rem; color: #555; }
+    nav { display: flex; justify-content: center; background: #fff; border-bottom: 1px solid #ccc; }
+    nav button { background: none; border: none; padding: 0.75rem 1.5rem; cursor: pointer; font-size: 1rem; }
+    nav button.active { border-bottom: 3px solid #0056b3; color: #0056b3; font-weight: bold; }
+    .tab-content { display: none; padding: 1rem 2rem; }
+    .tab-content.active { display: block; }
+    /* Explorer layout */
+    .content {
+  display: flex;
+  /* explorer sekmesinin toplam yüksekliğinden header/nav/pag. çıkınca kalan kısmı kaplasın */
+  height: calc(100vh - 9rem);
+  /* ana container kaydırma değil, çocuklar kaydırılacak */
+  overflow: hidden;
+}
+#sidebar {
+  width: 20%;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+  background: #f9f9f9;
+  /* sadece kendi içinde kaydır */
+  height: 100%;
+  overflow-y: auto;
+}
+#poem-list {
+  flex: 1;
+  padding: 1rem;
+  /* sadece kendi içinde kaydır */
+  height: 100%;
+  overflow-y: auto;
+}
+    .filter-group { margin-bottom: 1rem; }
+    .filter-group label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
+    .filter-group select, .filter-group input { width: 100%; }
+    .filter-group input[type="text"] { padding: 0.25rem; }
+    #poem-list { flex: 1; padding: 1rem; }
+    .poem-card { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
+    .poem-title { font-weight: bold; margin: 0; }
+    .poem-snippet { margin: 0.25rem 0; }
+    .expander { color: #0056b3; cursor: pointer; font-size: 0.9rem; text-decoration: underline; }
+    .full-poem { display: none; margin-top: 0.5rem; font-style: italic; }
+    /* Pagination */
+    #pagination { margin-top: 1rem; text-align: center; }
+    #pagination button { margin: 0 0.5rem; padding: 0.5rem 1rem; }
+    /* --- Filtre paneline akademik, temiz bir görünüm için --- */
+.filter-group {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.filter-title {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+.filter-options {
+  max-height: 160px;        /* scrollbar çıkabilir */
+  overflow-y: auto;
+  padding-left: 0.25rem;
+}
+.filter-options label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.filter-options input[type="checkbox"] {
+  margin-right: 0.5rem;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #0056b3;    /* mavi tonunda check işareti */
+}
+.poem-workname {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #004080;
+}
+.poem-title {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.poem-meter {
+  margin: 0.1rem 0 0.5rem;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
+
+</head>
+<body>
+  <header>
+    <h1>LATUC Interface</h1>
+    <p>This tool is designed to explore and analyze Latin Transcribed Ottoman Turkish Corpus (LATUC).<br>
+        You can access the data via https://zenodo.org/uploads/16065144.<br>
+       Designed by Enes Yılandiloğlu<br>
+    Contact: enes.yilandiloglu@helsinki.fi</p>
+  </header>
+  <nav>
+    <button id="tab-explorer" class="active">Explorer</button>
+    <button id="tab-analyzer">Analyzer</button>
+  </nav>
+  <main>
+    <!-- Explorer Sekmesi -->
+    <section id="explorer" class="tab-content active">
+      <h2>Explorer</h2>
+      <p style="margin-bottom:1rem; color:#555;">
+        Use the controls on the left to filter poems by Work Name, Pen Name, Real Name, VIAF ID, Century, Gender, or Rank.  
+        Then enter your search term and choose a Search Type:
+        <ul style="margin:0.5rem 0 0.5rem 1.5rem; padding:0; list-style:disc;">
+          <li><strong>Substring search</strong>: finds your query anywhere inside a token (e.g. “gül” matches both “gül” and “gülşen”).</li>
+          <li><strong>Whole‑word match</strong>: only standalone words are returned (so “gül” matches “gül” but not “gülşen”).</li>
+          <li><strong>Regular expression</strong>: use full regex syntax for advanced patterns (e.g. `^gül` to match words starting with “gül”).</li>
+        </ul>
+        Matched lines will be highlighted in the poem; click “Show full poem” to expand the entire text.
+      </p>
+    
+      <div class="content">
+        <aside id="sidebar">
+          <h3>Filtreler</h3>
+          <!-- Dinamik olarak doldurulacak filtreler -->
+          <!-- Work Name -->
+<div class="filter-group">
+    <span class="filter-title">Work Name</span>
+    <div id="filter-work_name-container" class="filter-options">
+      <!-- JS ile buraya <label><input type="checkbox" …>Work1</label> gibi satırlar eklenecek -->
+    </div>
+  </div>
+  
+  <!-- Pen Name -->
+  <div class="filter-group">
+    <span class="filter-title">Pen Name</span>
+    <div id="filter-pen_name-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+  </div>
+  
+  <!-- Real Name -->
+  <div class="filter-group">
+    <span class="filter-title">Real Name</span>
+    <div id="filter-real_name-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+  </div>
+  
+  <!-- viaf -->
+  <div class="filter-group">
+    <span class="filter-title">viaf</span>
+    <div id="filter-viaf-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+  </div>
+  
+  <!-- Century -->
+  <div class="filter-group">
+    <span class="filter-title">Century</span>
+    <div id="filter-century-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+
+  
+  <!-- Gender -->
+  <div class="filter-group">
+    <span class="filter-title">Gender</span>
+    <div id="filter-gender-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+  </div>
+  
+  <!-- Rank -->
+  <div class="filter-group">
+    <span class="filter-title">Rank</span>
+    <div id="filter-rank-container" class="filter-options">
+      <!-- JS ile checkbox’lar buraya gelecek -->
+    </div>
+</div>
+          <div class="filter-group">
+            <label for="search-type">Search Type</label>
+            <select id="search-type">
+              <option value="substring">Substring search</option>
+              <option value="wholeword">Whole-word search</option>
+              <option value="regex">Regular Expression</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="search-text">Search Text</label>
+            <input type="text" id="search-text" placeholder="Type your query">
+          </div>
+          <button id="reset-filters">Reset All Filters</button>
+        </aside>
+        <section id="poem-list">
+          <!-- Şiir kartları burada listelenecek -->
+        </section>
+      </div>
+      <div id="pagination">
+        <button id="prev-page">Previous</button>
+        <span id="page-info"></span>
+        <button id="next-page">Next</button>
+      </div>
+    </section>
+
+    <!-- Analyzer Sekmesi -->
+    <section id="analyzer" class="tab-content">
+        <h2>LATUC Analyzer</h2>
+        <p style="margin-bottom:1rem; color:#555;">
+          The Analyzer gives you corpus‑wide statistics and trends at a glance.  
+          • View total token counts, unique type counts, type‑token ratios, and hapax legomena across the entire dataset.  
+          • Explore meter frequencies with interactive bar charts and show‐hide controls for all meters.  
+          • See century‑by‑century breakdowns of works, tokens vs types, and TTR line plots.  
+          • Examine author demographics: distribution of genders and ranks per century.  
+          • Use the word‑based search tool below to query one or two terms (with optional POS), choose Substring/Whole‑word/Regex matching, and pick Absolute or Normalized mode to compare their frequencies over time.  
+        </p>
+        <h3>Corpus Statistics</h3>
+        <table id="stats-table" style="width:100%;max-width:600px;margin-bottom:2rem;border-collapse:collapse">
+          <thead>
+            <tr><th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd">Metric</th>
+                <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd">Value</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+  
+        <div style="max-width:800px;margin-bottom:2rem">
+          <canvas id="worksByCenturyChart"></canvas>
+        </div>
+        <div style="max-width:800px;margin-bottom:2rem">
+          <canvas id="typeTokenByCenturyChart"></canvas>
+        </div>
+        <div style="max-width:800px;margin-bottom:2rem">
+          <canvas id="ttrByCenturyChart"></canvas>
+        </div>
+        <!-- Gender distribution table -->
+        <h3>Gender distribution by century</h3>
+        <table id="gender-table" style="width:100%;max-width:600px;border-collapse:collapse;margin-bottom:2rem">
+        <thead>
+            <tr>
+            <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd">Century</th>
+            <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd">Male</th>
+            <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd">Female</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        </table>
+
+        <!-- Rank distribution table -->
+        <h3>Rank distribution by century</h3>
+        <table id="rank-table" style="width:100%;max-width:800px;border-collapse:collapse;margin-bottom:2rem">
+        <thead>
+            <tr id="rank-table-head">
+            <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd">Century</th>
+            <!-- rank headers inserted dynamically -->
+            </tr>
+        </thead>
+        <tbody></tbody>
+        </table>
+
+        <div style="max-width:800px;margin-bottom:2rem">
+            <canvas id="meterFreqChart"></canvas>
+            <button id="toggle-all-meters" style="margin-top:1rem;padding:0.5rem 1rem">Show all meters</button>
+            <div id="all-meters-container"
+                style="display:none; max-height:300px; overflow-y:auto;
+                        border:1px solid #ccc; padding:1rem; margin-top:1rem;
+                        background:#fff;">
+            <!-- Filled dynamically -->
+            </div>
+        </div>
+        
+        <h3>Word based analysis</h3>
+<div class="analysis-controls" style="max-width:600px; margin-bottom:2rem;">
+  <!-- First word -->
+  <div style="margin-bottom:1rem;">
+    <label for="word-a" style="font-weight:bold; display:block; margin-bottom:0.25rem;">
+      First word (A):
+    </label>
+    <input
+      type="text"
+      id="word-a"
+      placeholder="Enter A (e.g. gül or ol+VERB)"
+      style="width:100%; padding:0.5rem;"/>
+  </div>
+
+  <!-- Second word (optional) -->
+  <div style="margin-bottom:1rem;">
+    <label for="word-b" style="font-weight:bold; display:block; margin-bottom:0.25rem;">
+      Second word (B) (optional):
+    </label>
+    <input
+      type="text"
+      id="word-b"
+      placeholder="Enter B (e.g. cemâl or bahâr+NOUN)"
+      style="width:100%; padding:0.5rem;"/>
+  </div>
+
+  <!-- Match Type -->
+  <div style="margin-bottom:1rem;">
+    <label for="match-type" style="font-weight:bold; display:block; margin-bottom:0.25rem;">
+      Match Type:
+    </label>
+    <select id="match-type" style="width:100%; padding:0.5rem;">
+      <option value="substring">Substring</option>
+      <option value="wholeword">Whole‑word</option>
+      <option value="regex">Regex</option>
+    </select>
+  </div>
+
+  <!-- Analysis Mode -->
+  <div style="margin-bottom:1rem;">
+    <label for="analysis-mode" style="font-weight:bold; display:block; margin-bottom:0.25rem;">
+      Analysis Mode:
+    </label>
+    <select id="analysis-mode" style="width:100%; padding:0.5rem;">
+      <option value="absolute">Absolute</option>
+      <option value="normalized">Normalized (%)</option>
+    </select>
+  </div>
+</div>
+
+        
+      </section>
+  
+  </main>
+  <script>
+    // Sekme kontrolü
+    const btnExp = document.getElementById('tab-explorer');
+    const btnAna = document.getElementById('tab-analyzer');
+    const secExp = document.getElementById('explorer');
+    const secAna = document.getElementById('analyzer');
+    btnExp.addEventListener('click', () => {
+      btnExp.classList.add('active'); btnAna.classList.remove('active');
+      secExp.classList.add('active'); secAna.classList.remove('active');
+    });
+    btnAna.addEventListener('click', () => {
+      btnAna.classList.add('active'); btnExp.classList.remove('active');
+      secAna.classList.add('active'); secExp.classList.remove('active');
+    });
+
+    // Veri ve UI elemanları
+    const filterFields = [
+      { key: 'work_name', label: 'Work Name' },
+      { key: 'pen_name', label: 'Pen Name' },
+      { key: 'real_name', label: 'Real Name' },
+      { key: 'viaf', label: 'viaf' },
+      { key: 'century', label: 'Century' },
+      { key: 'gender', label: 'Gender' },
+      { key: 'rank', label: 'Rank' }
+    ];
+    let latuc = {}, metadata = [];
+    let currentPage = 1, pageSize = 10;
+
+    // --- after your existing functions, but still inside the <script> tag:
+
+// Call this at the end of loadData()
+function renderAnalyzer() {
+  // 1) Gather all lines & compute global stats
+  const allLines = [];
+  const allTokens = [];
+  const meterCounts = {};
+  const genderMap = {};         // { '15': { male: 0, female: 0 }, … }
+  metadata.forEach(d => {
+    const poems = latuc[d.ID]?.Poems || {};
+    Object.values(poems).forEach(p => {
+      const lines = p.Poem.split('\n');
+      allLines.push(...lines);
+      lines.forEach(ln => {
+        const toks = ln.split(/\s+/).filter(Boolean);
+        allTokens.push(...toks);
+      });
+      // count this poem’s meter
+      meterCounts[p.Meter] = (meterCounts[p.Meter]||0) + 1;
+    });
+  });
+
+  const totalTokens   = allTokens.length;
+  const freqMap       = allTokens.reduce((m,t)=>(m[t]=(m[t]||0)+1, m), {});
+  const uniqueTypes   = Object.keys(freqMap).length;
+  const hapaxCount    = Object.values(freqMap).filter(c=>c===1).length;
+  const lineCount     = allLines.length;
+  const poemCount     = Object.keys(latuc).reduce((sum,id)=>sum + Object.keys(latuc[id].Poems).length, 0);
+  const meterCount    = Object.keys(meterCounts).length;
+  const ttr           = (uniqueTypes/totalTokens).toFixed(4);
+
+  // fill stats table
+  const rows = [
+    ['Total Tokens', totalTokens],
+    ['Unique Types', uniqueTypes],
+    ['TTR', ttr],
+    ['Hapax Legomena', hapaxCount],
+    ['Line Count', lineCount],
+    ['Poem Count', poemCount],
+    ['Meter Count', meterCount]
+  ];
+  const tbody = document.querySelector('#stats-table tbody');
+  tbody.innerHTML = '';
+  rows.forEach(([label,val])=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="padding:0.5rem;border-bottom:1px solid #eee">${label}</td>
+                    <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right">${val}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // 2) Per‐century breakdown
+  const centuryMap = {};  // { 15:{works:Set, tokens:[], types:Set}, … }
+  metadata.forEach(d => {
+    const c = d.century;
+    if (!centuryMap[c]) centuryMap[c] = { works:new Set(), tokens:[], types:new Set() };
+    centuryMap[c].works.add(d.ID);
+    const poems = latuc[d.ID].Poems;
+    Object.values(poems).forEach(p => {
+      p.Poem.split('\n').forEach(ln=>{
+        ln.split(/\s+/).filter(Boolean).forEach(tok=>{
+          centuryMap[c].tokens.push(tok);
+          centuryMap[c].types.add(tok);
+        });
+      });
+    });
+  });
+
+  const centuries = Object.keys(centuryMap).sort((a,b)=>a-b);
+  // a) works by century
+  new Chart(document.getElementById('worksByCenturyChart'), {
+    type:'bar',
+    data:{
+      labels:centuries,
+      datasets:[{
+        label:'Works by century',
+        data:centuries.map(c=> centuryMap[c].works.size )
+      }]
+    },
+    options:{scales:{y:{beginAtZero:true}}}
+  });
+
+  // b) type vs token by century
+  new Chart(document.getElementById('typeTokenByCenturyChart'), {
+  type: 'bar',
+  data: {
+    labels: centuries,
+    datasets: [
+      {
+        label: 'Token Count',
+        data: centuries.map(c => centuryMap[c].tokens.length),
+        backgroundColor: 'rgba(54,162,235,0.6)',  // optional: give each bar a distinct color
+      },
+      {
+        label: 'Type Count',
+        data: centuries.map(c => centuryMap[c].types.size),
+        backgroundColor: 'rgba(255,99,132,0.6)',
+      }
+    ]
+  },
+  options: {
+    scales: {
+      x: {
+        // ensure we are in grouped (non‑stacked) mode
+        stacked: false,
+      },
+      y: {
+        beginAtZero: true,
+        stacked: false
+      }
+    },
+    // if you want a little more spacing:
+    // barPercentage: 0.6,
+    // categoryPercentage: 0.5,
+  }
+});
+
+
+  // c) TTR by century
+  new Chart(document.getElementById('ttrByCenturyChart'), {
+    type:'line',
+    data:{
+      labels:centuries,
+      datasets:[{
+        label:'TTR',
+        data:centuries.map(c=>
+          +( centuryMap[c].types.size / centuryMap[c].tokens.length ).toFixed(4)
+        )
+      }]
+    },
+    options:{scales:{y:{beginAtZero:true}}}
+  });
+
+
+  
+    // --- 6) Gender distribution → table
+const genderByCentury = {};
+metadata.forEach(d => {
+  const c = d.century;
+  if (!genderByCentury[c]) genderByCentury[c] = { male: 0, female: 0 };
+  if (d.gender === 'male' || d.gender === 'female') {
+    genderByCentury[c][d.gender]++;
+  }
+});
+const genCenturies = Object.keys(genderByCentury).sort((a,b)=>a-b);
+const gbody = document.querySelector('#gender-table tbody');
+gbody.innerHTML = '';
+genCenturies.forEach(c => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="padding:0.5rem;border-bottom:1px solid #eee">${c}</td>
+    <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right">${genderByCentury[c].male}</td>
+    <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right">${genderByCentury[c].female}</td>
+  `;
+  gbody.appendChild(tr);
+});
+
+// --- 7) Rank distribution → table
+// 7a) collect all distinct ranks
+const allRanks = Array.from(new Set(metadata.map(d=>d.rank))).sort();
+// 7b) build century→rank→count
+const rankByCentury = {};
+metadata.forEach(d => {
+  const c = d.century;
+  rankByCentury[c] = rankByCentury[c]||{};
+  rankByCentury[c][d.rank] = (rankByCentury[c][d.rank]||0) + 1;
+});
+// 7c) render header row
+const rhead = document.getElementById('rank-table-head');
+rhead.innerHTML = `<th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd">Century</th>`;
+allRanks.forEach(rk => {
+  const th = document.createElement('th');
+  th.textContent = rk;
+  th.style.padding = '0.5rem';
+  th.style.borderBottom = '1px solid #ddd';
+  th.style.textAlign = 'right';
+  rhead.appendChild(th);
+});
+// 7d) render body
+const rbody = document.querySelector('#rank-table tbody');
+rbody.innerHTML = '';
+genCenturies.forEach(c => {
+  const tr = document.createElement('tr');
+  let html = `<td style="padding:0.5rem;border-bottom:1px solid #eee">${c}</td>`;
+  allRanks.forEach(rk => {
+    const cnt = rankByCentury[c]?.[rk]||0;
+    html += `<td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right">${cnt}</td>`;
+  });
+  tr.innerHTML = html;
+  rbody.appendChild(tr);
+});
+
+
+  
+  // d) top 10 meters frequency + Show/Hide all meters
+  const sortedMeters = Object.entries(meterCounts)
+    .sort((a,b) => b[1] - a[1]);
+
+  // -- Top‑10 chart
+  const top10 = sortedMeters.slice(0, 10);
+  new Chart(document.getElementById('meterFreqChart'), {
+    type: 'bar',
+    data: {
+      labels: top10.map(x => x[0]),
+      datasets: [{
+        label: 'Top‑10 Meters',
+        data: top10.map(x => x[1])
+      }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+
+  // -- Prepare full list once
+  const fullMeters = sortedMeters.map(([meter, count]) => ({ meter, count }));
+
+  // -- Show/Hide button and container (assumes these IDs exist in your HTML)
+  const toggleBtn = document.getElementById('toggle-all-meters');
+  const allBox    = document.getElementById('all-meters-container');
+
+  toggleBtn.addEventListener('click', () => {
+    if (allBox.style.display === 'none') {
+      // Build full‐meters table
+      const tbl = document.createElement('table');
+      tbl.style.width = '100%';
+      tbl.style.borderCollapse = 'collapse';
+      // Header row
+      const hdr = tbl.insertRow();
+      ['Meter','Count'].forEach((txt, i) => {
+        const th = document.createElement('th');
+        th.textContent = txt;
+        th.style.padding = '0.5rem';
+        th.style.borderBottom = '1px solid #ddd';
+        th.style.textAlign = i===0 ? 'left' : 'right';
+        hdr.appendChild(th);
+      });
+      // Data rows
+      fullMeters.forEach(({ meter, count }) => {
+        const row = tbl.insertRow();
+        const c0 = row.insertCell();
+        c0.textContent = meter;
+        c0.style.padding = '0.5rem';
+        const c1 = row.insertCell();
+        c1.textContent = count;
+        c1.style.padding = '0.5rem';
+        c1.style.textAlign = 'right';
+      });
+
+      allBox.innerHTML = '';       // clear any previous
+      allBox.appendChild(tbl);
+      allBox.style.display = 'block';
+      toggleBtn.textContent = 'Hide all meters';
+    } else {
+      allBox.style.display = 'none';
+      toggleBtn.textContent = 'Show all meters';
+    }
+  });
+}
+
+
+
+    async function loadData() {
+      const resJson = await fetch('LATUC.json');
+      latuc = await resJson.json();
+      const resCsv = await fetch('LATUC_metadata.csv');
+      const text = await resCsv.text();
+      metadata = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+      initializeFilters();
+      updatePoemList();
+      renderAnalyzer();
+    }
+
+
+
+    function initializeFilters() {
+  // 1) Filtre checkbox’larını oluştur
+  filterFields.forEach(f => {
+    const container = document.getElementById(`filter-${f.key}-container`);
+    const values = Array.from(new Set(metadata.map(d => d[f.key]))).sort();
+    values.forEach(v => {
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.name = f.key;
+      chk.value = v;
+      chk.id = `chk-${f.key}-${v}`;
+
+      const lbl = document.createElement('label');
+      lbl.htmlFor = chk.id;
+      lbl.append(chk, document.createTextNode(v));
+
+      chk.addEventListener('change', () => {
+        currentPage = 1;
+        updatePoemList();
+      });
+
+      container.appendChild(lbl);
+    });
+  });
+
+  // 2) Search metni ve tipi dinleyicileri
+  const txtInput = document.getElementById('search-text');
+  const typeSelect = document.getElementById('search-type');
+  txtInput.addEventListener('input', () => { currentPage = 1; updatePoemList(); });
+  typeSelect.addEventListener('change', () => { currentPage = 1; updatePoemList(); });
+
+  // 3) Sayfa gezinme
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; updatePoemList(); }
+  });
+  document.getElementById('next-page').addEventListener('click', () => {
+    currentPage++; updatePoemList();
+  });
+
+  // 4) Reset butonu
+  document.getElementById('reset-filters').addEventListener('click', () => {
+    // bütün checkbox’ları temizle
+    filterFields.forEach(f => {
+      document.querySelectorAll(`input[name="${f.key}"]`)
+              .forEach(chk => chk.checked = false);
+    });
+    document.getElementById('search-text').value = '';
+    document.getElementById('search-type').value = 'substring';
+    currentPage = 1;
+    updatePoemList();
+  });
+}
+
+
+function filterMetadata() {
+  let filtered = metadata.slice();
+
+  // Sadece checkbox filtreleri (Work Name, Pen Name, …)
+  filterFields.forEach(f => {
+    const sel = Array.from(
+      document.querySelectorAll(`input[name="${f.key}"]:checked`)
+    ).map(c => c.value);
+    if (sel.length) {
+      filtered = filtered.filter(d => sel.includes(d[f.key]));
+    }
+  });
+
+  return filtered;
+}
+
+
+function updatePoemList() {
+  const container = document.getElementById('poem-list');
+  container.innerHTML = '';
+
+  // 1) Metadata filtreleri → hangi poem’leri dahil edeceğiz?
+  const filteredMeta = filterMetadata();
+
+  // 2) Flatten metadata → poemEntries
+  const poemEntries = [];
+  filteredMeta.forEach(datum => {
+    const poemsObj = latuc[datum.ID]?.Poems || {};
+    Object.values(poemsObj).forEach(poem => {
+      poemEntries.push({ meta: datum, poem });
+    });
+  });
+
+  // 3) Pagination
+  const total = poemEntries.length;
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = poemEntries.slice(start, start + pageSize);
+
+  // 4) Arama terimi + mod
+  const raw  = document.getElementById('search-text').value.trim();
+  const mode = document.getElementById('search-type').value; // substring|wholeword|regex
+  const termObjs = raw
+    .split(/\s*,\s*/)
+    .filter(Boolean)
+    .map(tok => {
+      const [word, pos] = tok.split(/\s*\+\s*/);
+      return { word, pos: pos || null };
+    });
+
+  // 5) Eğer raw doluysa, önce pageItems’i sadece eşleşen poem’lerle daralt
+  let displayItems = pageItems;
+  if (raw) {
+    displayItems = pageItems.filter(({ poem }) => {
+      const lines   = poem.Poem.split('\n');
+      const tagsArr = poem.tags || [];
+
+      // bir termObj’un en az bir satırda eşleşmesi yeter
+      return termObjs.some(({ word, pos }) => {
+        return lines.some((ln, lineIdx) => {
+          const tokens   = ln.split(/\s+/);
+          const lineTags = (tagsArr[lineIdx] || '').split(/\s+/);
+
+          return tokens.some((tok, ti) => {
+            // A) Word testi
+            let okWord = false;
+            if (mode === 'substring') {
+              okWord = tok.toLowerCase().includes(word.toLowerCase());
+            } else if (mode === 'wholeword') {
+              const esc = escapeRegex(word);
+              okWord = new RegExp(`(?<=^|\\s)${esc}(?=\\s|$)`, 'i').test(tok);
+            } else {
+              try { okWord = new RegExp(word, 'i').test(tok); }
+              catch { okWord = false; }
+            }
+            if (!okWord) return false;
+
+            // B) POS testi
+            if (!pos || mode === 'substring') {
+              return true;
+            }
+            if (mode === 'wholeword') {
+              return lineTags[ti] === pos;
+            }
+            // regex modu: [A|B] alternation destekli
+            let pattern = pos;
+            const m = pos.match(/^\[(.*)\]$/);
+            if (m) {
+              pattern = `^(?:${m[1]})$`;
+            } else {
+              pattern = `^${pos}$`;
+            }
+            try {
+              return new RegExp(pattern).test(lineTags[ti]);
+            } catch {
+              return lineTags[ti] === pos;
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // 6) Render sadece displayItems
+  displayItems.forEach(({ meta, poem }) => {
+    const card = document.createElement('div');
+    card.className = 'poem-card';
+
+    // — başlık / eser adı / title / meter
+    const h3 = document.createElement('h3');
+    h3.className = 'poem-workname';
+    h3.textContent = meta.work_name;
+    card.appendChild(h3);
+
+    const t = document.createElement('p');
+    t.className = 'poem-title';
+    t.textContent = poem.Title;
+    card.appendChild(t);
+
+    const m = document.createElement('p');
+    m.className = 'poem-meter';
+    m.textContent = poem.Meter;
+    card.appendChild(m);
+
+    const lines   = poem.Poem.split('\n');
+    const tagsArr = poem.tags || [];
+
+    if (!raw) {
+      // ARAMA YOKSA: tüm satırları göster
+      lines.forEach(ln => {
+        const p = document.createElement('p');
+        p.textContent = ln;
+        card.appendChild(p);
+      });
+    } else {
+      // ARAMA VARSA: sadece eşleşen satırları göster + highlight
+      lines.forEach((ln, lineIdx) => {
+        const tokens   = ln.split(/\s+/);
+        const lineTags = (tagsArr[lineIdx] || '').split(/\s+/);
+
+        const match = termObjs.some(({ word, pos }) => {
+          return tokens.some((tok, ti) => {
+            // A) Word testi
+            let okWord = false;
+            if (mode === 'substring') {
+              okWord = tok.toLowerCase().includes(word.toLowerCase());
+            } else if (mode === 'wholeword') {
+              const esc = escapeRegex(word);
+              okWord = new RegExp(`(?<=^|\\s)${esc}(?=\\s|$)`, 'i').test(tok);
+            } else {
+              try { okWord = new RegExp(word, 'i').test(tok); }
+              catch { okWord = false; }
+            }
+            if (!okWord) return false;
+
+            // B) POS testi
+            if (!pos || mode === 'substring') {
+              return true;
+            }
+            if (mode === 'wholeword') {
+              return lineTags[ti] === pos;
+            }
+            let pattern = pos;
+            const m = pos.match(/^\[(.*)\]$/);
+            if (m) {
+              pattern = `^(?:${m[1]})$`;
+            } else {
+              pattern = `^${pos}$`;
+            }
+            try {
+              return new RegExp(pattern).test(lineTags[ti]);
+            } catch {
+              return lineTags[ti] === pos;
+            }
+          });
+        });
+
+        if (match) {
+          const p = document.createElement('p');
+          let html = ln;
+          termObjs.forEach(({ word }) => {
+            const esc = escapeRegex(word);
+            const re = mode === 'substring'
+              ? new RegExp(esc, 'gi')
+              : mode === 'wholeword'
+                ? new RegExp(`(?<=^|\\s)${esc}(?=\\s|$)`, 'gi')
+                : new RegExp(word, 'gi');
+            html = html.replace(re, m => `<mark>${m}</mark>`);
+          });
+          p.innerHTML = html;
+          card.appendChild(p);
+        }
+      });
+
+      // “Tam Şiiri Göster” butonu
+      const btn = document.createElement('span');
+      btn.className = 'expander';
+      btn.textContent = 'Show full poem';
+      card.appendChild(btn);
+
+      // Tam şiir (başta gizli)
+      const full = document.createElement('div');
+      full.className = 'full-poem';
+      full.style.display = 'none';
+      lines.forEach(ln => {
+        const p = document.createElement('p');
+        p.innerHTML = termObjs.length
+          ? ln.replace(
+              mode === 'substring'
+                ? new RegExp(escapeRegex(termObjs[0].word), 'gi')
+                : new RegExp(termObjs[0].word, 'gi'),
+              m => `<mark>${m}</mark>`
+            )
+          : ln;
+        full.appendChild(p);
+      });
+      card.appendChild(full);
+
+      btn.addEventListener('click', () => {
+        full.style.display = full.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+
+    container.appendChild(card);
+  });
+
+  // 7) pagination kontrolleri
+  document.getElementById('page-info').textContent =
+    `${currentPage} / ${Math.ceil(total / pageSize)}`;
+  document.getElementById('prev-page').disabled = (currentPage === 1);
+  document.getElementById('next-page').disabled = ((currentPage) * pageSize >= total);
+}
+
+
+
+    document.addEventListener('DOMContentLoaded', loadData);
+
+
+// 1) Build once at load: flatten metadata + poems → tokenRecords
+let tokenRecords = [];
+function buildTokenIndex() {
+  tokenRecords = [];
+  metadata.forEach(d => {
+    const poems = latuc[d.ID]?.Poems || {};
+    Object.values(poems).forEach(p => {
+      const lines = p.Poem.split('\n');
+      lines.forEach((ln, lineIdx) => {
+        const tags = (p.tags||[])[lineIdx]?.split(/\s+/) || [];
+        ln.split(/\s+/).filter(Boolean).forEach((tok,i) => {
+          tokenRecords.push({
+            century:   d.century,
+            real_name: d.real_name,
+            pen_name:  d.pen_name,
+            gender:    d.gender,
+            rank:      d.rank,
+            token:     tok,
+            tag:       tags[i] || null
+          });
+        });
+      });
+    });
+  });
+}
+
+// 2) listen for changes
+document.getElementById('word-a').addEventListener('input',   runWordAnalysis);
+document.getElementById('word-b').addEventListener('input',   runWordAnalysis);
+document.getElementById('search-type').addEventListener('change', runWordAnalysis);
+
+// 3) regex escape helper
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+// 4) single‐token match logic (same as Explorer)
+function tokenMatches(tok, tag, term, mode){
+  let ok = false;
+  if(mode==='substring'){
+    ok = tok.toLowerCase().includes(term.word.toLowerCase());
+  } else if(mode==='wholeword'){
+    const esc = escapeRegex(term.word);
+    ok = new RegExp(`(?<=^|\\s)${esc}(?=\\s|$)`,`i`).test(tok);
+  } else {
+    try{ ok = new RegExp(term.word,'i').test(tok); }catch{ok=false;}
+  }
+  if(!ok) return false;
+  if(!term.pos||mode==='substring') return true;
+  if(mode==='wholeword') return tag===term.pos;
+  // regex POS (supports [A|B])
+  let pattern = term.pos, m=term.pos.match(/^\[(.*)\]$/);
+  pattern = m? `^(?:${m[1]})$` : `^${term.pos}$`;
+  try{ return new RegExp(pattern).test(tag); }
+  catch{ return tag===term.pos; }
+}
+
+// ─── 5) Correlation helpers ───
+function pearson(x,y) {
+  const n = x.length;
+  const mx = x.reduce((a,b)=>a+b,0)/n;
+  const my = y.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx2=0, dy2=0;
+  for (let i=0;i<n;i++) {
+    const dx = x[i]-mx, dy = y[i]-my;
+    num += dx*dy;
+    dx2 += dx*dx;
+    dy2 += dy*dy;
+  }
+  return num/Math.sqrt(dx2*dy2);
+}
+function spearman(x,y) {
+  const rank = arr => arr
+    .map((v,i)=>({v,i}))
+    .sort((a,b)=>a.v-b.v)
+    .map((o,rank)=>({ ...o, rank }))
+    .sort((a,b)=>a.i-b.i)
+    .map(o=>o.rank);
+  const rx = rank(x), ry = rank(y);
+  return pearson(rx,ry);
+}
+
+
+  // ─── 10) Main runner: call this on any input change ───
+  async function runWordAnalysis() {
+    if (!tokenRecords.length) buildTokenIndex();
+
+    // 1) Inputs
+    const aRaw         = document.getElementById('word-a').value.trim();
+    const bRaw         = document.getElementById('word-b').value.trim();
+    const matchMode    = document.getElementById('match-type').value;      // substring|wholeword|regex
+    const analysisMode = document.getElementById('analysis-mode').value;   // absolute|normalized
+    const panel        = document.getElementById('analyzer');
+    // clear any old analysis sections
+    panel.querySelectorAll('.analysis-section').forEach(el => el.remove());
+    if (!aRaw) return;
+
+    // 2) Parse A/B terms
+    const termA = { word: aRaw.split('+')[0], pos: aRaw.split('+')[1] || null };
+    const hasB  = !!bRaw;
+    const termB = hasB ? { word: bRaw.split('+')[0], pos: bRaw.split('+')[1] || null } : null;
+
+    // 3) Collect matches
+    const matchesA = tokenRecords.filter(r => tokenMatches(r.token, r.tag, termA, matchMode));
+    const matchesB = hasB
+      ? tokenRecords.filter(r => tokenMatches(r.token, r.tag, termB, matchMode))
+      : [];
+
+    // 4) Century axis
+    const centuries = [...new Set(tokenRecords.map(r => r.century))].sort((a, b) => a - b);
+
+    // 5) Tally counts & totals
+    const absA  = {}, absB  = {}, totTok = {};
+    tokenRecords.forEach(r => { totTok[r.century] = (totTok[r.century]||0) + 1; });
+    matchesA.forEach(r =>    { absA[r.century]  = (absA[r.century] || 0)  + 1; });
+    matchesB.forEach(r =>    { absB[r.century]  = (absB[r.century] || 0)  + 1; });
+
+    // 6) Compute the “measure” per century
+    const measure = {};
+    centuries.forEach(c => {
+      if (hasB) {
+        const a = absA[c]||0, b = absB[c]||0;
+        if (analysisMode === 'absolute') {
+          measure[c] = (a + b) ? (a / (a + b) * 100) : 0;
+        } else {
+          const relA = a / (totTok[c]||1), relB = b / (totTok[c]||1);
+          measure[c] = (relA + relB)
+            ? ( relA / (relA + relB) * 100 )
+            : 0;
+        }
+      } else {
+        const a = absA[c] || 0;
+        measure[c] = (analysisMode === 'absolute')
+          ? a
+          : (a / (totTok[c]||1) * 100);
+      }
+    });
+
+    // tiny helper to auto‑append a new section
+    function mksec() {
+      const d = document.createElement('div');
+      d.className = 'analysis-section';
+      panel.appendChild(d);
+      return d;
+    }
+
+    // 7) Render the main table
+    const sTable = mksec();
+    const headerLabel = hasB
+      ? (analysisMode === 'absolute' ? 'Raw % A/(A+B)' : 'Normalized % A/(A+B)')
+      : (analysisMode === 'absolute' ? 'Abs A' : 'Normalized % of total');
+    sTable.innerHTML = `<h3>${headerLabel} by Century</h3>`;
+    const tbl = document.createElement('table');
+    tbl.style.borderCollapse = 'collapse';
+    tbl.innerHTML = `
+      <thead>
+        <tr>
+          <th style="padding:4px;border:1px solid #ddd">Century</th>
+          <th style="padding:4px;border:1px solid #ddd">${headerLabel}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${centuries.map(c => `
+          <tr>
+            <td style="padding:4px;border:1px solid #ddd">${c}</td>
+            <td style="padding:4px;border:1px solid #ddd;text-align:right">
+              ${measure[c].toFixed(2)}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>`;
+    sTable.appendChild(tbl);
+
+    // 8) Render the line chart
+    const sChart = mksec();
+    sChart.innerHTML = `<h3>Chart — ${headerLabel}</h3>`;
+    const cnv = document.createElement('canvas');
+    sChart.appendChild(cnv);
+    new Chart(cnv, {
+      type: 'line',
+      data: {
+        labels: centuries,
+        datasets: [{
+          label: headerLabel,
+          data: centuries.map(c => measure[c].toFixed(2)),
+          borderColor: hasB
+            ? (analysisMode==='absolute' ? '#36a2eb' : '#ff6384')
+            : (analysisMode==='absolute' ? '#36a2eb' : '#ff6384'),
+          fill: false
+        }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+
+
+    // 10) Gender breakdown **inside** runWordAnalysis
+    const sGender = mksec();
+    sGender.innerHTML = `<h3>By Gender & Century (${headerLabel})</h3>`;
+    const genders = ['female','male'];
+    const tblG = document.createElement('table');
+    tblG.style.borderCollapse = 'collapse';
+    tblG.innerHTML = `
+      <thead>
+        <tr>
+          <th style="padding:4px;border:1px solid #ddd">Century</th>
+          ${genders.map(g=>`<th style="padding:4px;border:1px solid #ddd;text-align:right">${g}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${centuries.map(c=>{
+          // counts
+          const ca = { female:0, male:0 }, cb = { female:0, male:0 };
+          matchesA.filter(r=>r.century==c).forEach(r=>ca[r.gender]++);
+          matchesB.filter(r=>r.century==c).forEach(r=>cb[r.gender]++);
+          const vals = genders.map(g=>{
+            const a = ca[g], b = hasB ? cb[g] : 0;
+            if (hasB) {
+              if (analysisMode==='absolute') {
+                return (a+b)?(a/(a+b)*100).toFixed(2):'0.00';
+              } else {
+                const relA = a/(totTok[c]||1), relB = b/(totTok[c]||1);
+                return (relA+relB)?(relA/(relA+relB)*100).toFixed(2):'0.00';
+              }
+            } else {
+              return (analysisMode==='absolute') ? a : ((a)/(totTok[c]||1)*100).toFixed(2);
+            }
+          });
+          return `
+            <tr>
+              <td style="padding:4px;border:1px solid #ddd">${c}</td>
+              <td style="padding:4px;border:1px solid #ddd;text-align:right">${vals[0]}</td>
+              <td style="padding:4px;border:1px solid #ddd;text-align:right">${vals[1]}</td>
+            </tr>`;
+        }).join('')}
+      </tbody>`;
+    sGender.appendChild(tblG);
+
+    // 11) Rank breakdown **inside** runWordAnalysis
+    const allRanks = Array.from(new Set(tokenRecords.map(r=>r.rank))).sort();
+    const sRank = mksec();
+    sRank.innerHTML = `<h3>By Rank & Century (${headerLabel})</h3>`;
+    const tblR = document.createElement('table');
+    tblR.style.borderCollapse = 'collapse';
+    tblR.innerHTML = `
+      <thead>
+        <tr>
+          <th style="padding:4px;border:1px solid #ddd">Century</th>
+          ${allRanks.map(rk=>`<th style="padding:4px;border:1px solid #ddd;text-align:right">${rk}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${centuries.map(c=>{
+          // count A/B by rank
+          const ca = {}, cb = {};
+          matchesA.filter(r=>r.century==c).forEach(r=>ca[r.rank]=(ca[r.rank]||0)+1);
+          matchesB.filter(r=>r.century==c).forEach(r=>cb[r.rank]=(cb[r.rank]||0)+1);
+          const vals = allRanks.map(rk=>{
+            const a = ca[rk]||0, b = hasB ? cb[rk]||0 : 0;
+            if (hasB) {
+              if (analysisMode==='absolute') {
+                return (a+b)?(a/(a+b)*100).toFixed(2):'0.00';
+              } else {
+                const relA = a/(totTok[c]||1), relB = b/(totTok[c]||1);
+                return (relA+relB)?(relA/(relA+relB)*100).toFixed(2):'0.00';
+              }
+            } else {
+              return (analysisMode==='absolute') ? a : ((a)/(totTok[c]||1)*100).toFixed(2);
+            }
+          });
+          return `
+            <tr>
+              <td style="padding:4px;border:1px solid #ddd">${c}</td>
+              ${vals.map(v=>`<td style="padding:4px;border:1px solid #ddd;text-align:right">${v}</td>`).join('')}
+            </tr>`;
+        }).join('')}
+      </tbody>`;
+    sRank.appendChild(tblR);
+
+        // 9) Pearson correlation
+        const x = centuries.map(Number);
+    const y = centuries.map(c => measure[c]);
+    const r = pearson(x, y);
+    const df = x.length - 2;
+    const t  = r * Math.sqrt(df / (1 - r*r));
+    const p  = 2 * (1 - jStat.studentt.cdf(Math.abs(t), df));
+    const sCorr = mksec();
+    sCorr.innerHTML = `
+      <h3>Correlation</h3>
+      <p>Pearson r = ${r.toFixed(3)}, p = ${p.toFixed(6)}</p>
+    `;
+  } // end runWordAnalysis
+
+  // ─── 12) Hook up listeners to the **new** controls ───
+  document.getElementById('word-a')         .addEventListener('input',  runWordAnalysis);
+  document.getElementById('word-b')         .addEventListener('input',  runWordAnalysis);
+  document.getElementById('match-type')     .addEventListener('change', runWordAnalysis);
+  document.getElementById('analysis-mode')  .addEventListener('change', runWordAnalysis);
+
+  // ensure it also runs once after your data load
+  const _origLoad = loadData;
+  loadData = async function() {
+    await _origLoad();
+    runWordAnalysis();
+  };
+
+
+
+  </script>
+</body>
+</html>
