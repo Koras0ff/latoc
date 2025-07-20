@@ -1,5 +1,0 @@
-streamlit>=1.0
-pandas
-numpy
-scipy>=1.11.3
-altair
