@@ -126,6 +126,17 @@
     <!-- Explorer Sekmesi -->
     <section id="explorer" class="tab-content active">
       <h2>Explorer</h2>
+      <p style="margin-bottom:1rem; color:#555;">
+        Use the controls on the left to filter poems by Work Name, Pen Name, Real Name, VIAF ID, Century, Gender, or Rank.  
+        Then enter your search term and choose a Search Type:
+        <ul style="margin:0.5rem 0 0.5rem 1.5rem; padding:0; list-style:disc;">
+          <li><strong>Substring search</strong>: finds your query anywhere inside a token (e.g. “gül” matches both “gül” and “gülşen”).</li>
+          <li><strong>Whole‑word match</strong>: only standalone words are returned (so “gül” matches “gül” but not “gülşen”).</li>
+          <li><strong>Regular expression</strong>: use full regex syntax for advanced patterns (e.g. `^gül` to match words starting with “gül”).</li>
+        </ul>
+        Matched lines will be highlighted in the poem; click “Show full poem” to expand the entire text.
+      </p>
+    
       <div class="content">
         <aside id="sidebar">
           <h3>Filtreler</h3>
@@ -186,36 +197,42 @@
     </div>
 </div>
           <div class="filter-group">
-            <label for="search-type">Arama Tipi</label>
+            <label for="search-type">Search Type</label>
             <select id="search-type">
-              <option value="substring">Kısmi Arama</option>
-              <option value="wholeword">Kelime Eşleştirme</option>
-              <option value="regex">Regex ile Arama</option>
+              <option value="substring">Substring search</option>
+              <option value="wholeword">Whole-word search</option>
+              <option value="regex">Regular Expression</option>
             </select>
           </div>
           <div class="filter-group">
             <label for="search-text">Search Text</label>
-            <input type="text" id="search-text" placeholder="Arama terimini girin">
+            <input type="text" id="search-text" placeholder="Type your query">
           </div>
-          <button id="reset-filters">Filtreleri Sıfırla</button>
+          <button id="reset-filters">Reset All Filters</button>
         </aside>
         <section id="poem-list">
           <!-- Şiir kartları burada listelenecek -->
         </section>
       </div>
       <div id="pagination">
-        <button id="prev-page">Önceki</button>
+        <button id="prev-page">Previous</button>
         <span id="page-info"></span>
-        <button id="next-page">Sonraki</button>
+        <button id="next-page">Next</button>
       </div>
     </section>
 
     <!-- Analyzer Sekmesi -->
     <section id="analyzer" class="tab-content">
         <h2>LATUC Analyzer</h2>
+        <p style="margin-bottom:1rem; color:#555;">
+          The Analyzer gives you corpus‑wide statistics and trends at a glance.  
+          • View total token counts, unique type counts, type‑token ratios, and hapax legomena across the entire dataset.  
+          • Explore meter frequencies with interactive bar charts and show‐hide controls for all meters.  
+          • See century‑by‑century breakdowns of works, tokens vs types, and TTR line plots.  
+          • Examine author demographics: distribution of genders and ranks per century.  
+          • Use the word‑based search tool below to query one or two terms (with optional POS), choose Substring/Whole‑word/Regex matching, and pick Absolute or Normalized mode to compare their frequencies over time.  
+        </p>
         <h3>Corpus Statistics</h3>
-        <p>View token frequencies, type‑token ratios, and century‑by‑century trends across the entire dataset.</p>
-  
         <table id="stats-table" style="width:100%;max-width:600px;margin-bottom:2rem;border-collapse:collapse">
           <thead>
             <tr><th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd">Metric</th>
@@ -292,7 +309,7 @@
     <input
       type="text"
       id="word-b"
-      placeholder="Enter B (e.g. bahar+NOUN)"
+      placeholder="Enter B (e.g. cemâl or bahâr+NOUN)"
       style="width:100%; padding:0.5rem;"/>
   </div>
 
@@ -875,7 +892,7 @@ function updatePoemList() {
       // “Tam Şiiri Göster” butonu
       const btn = document.createElement('span');
       btn.className = 'expander';
-      btn.textContent = 'Tam Şiiri Göster';
+      btn.textContent = 'Show full poem';
       card.appendChild(btn);
 
       // Tam şiir (başta gizli)
@@ -910,7 +927,6 @@ function updatePoemList() {
   document.getElementById('prev-page').disabled = (currentPage === 1);
   document.getElementById('next-page').disabled = ((currentPage) * pageSize >= total);
 }
-
 
 
 
